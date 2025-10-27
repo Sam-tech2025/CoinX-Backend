@@ -85,8 +85,13 @@ const createTransactionQuery = async (details, image) => {
 }
 
 
-const getUserTransactionQuery = async (status, page, limit) => {
+const getUserTransactionQuery = async (searchTerm, status = [], transactionType = [], dateRange = {}, page, limit) => {
     try {
+        console.log({ searchTerm })
+
+        status = JSON.parse(status)
+        transactionType = JSON.parse(transactionType)
+
         const options = {
             page: page,
             limit: limit,
@@ -99,8 +104,16 @@ const getUserTransactionQuery = async (status, page, limit) => {
 
         let filter = {}
 
-        if (status && status !== "all") {
-            filter.status = { $regex: `^${status}`, $options: "i" }
+        if (Array.isArray(status) && status.length > 0) {
+            filter.status = { $in: status.map(s => new RegExp(`^${s}$`, "i")) };
+        } else if (Array.isArray(transactionType) && transactionType.length > 0) {
+            filter.transactionType = { $in: transactionType.map(t => new RegExp(`${t}$`, "i")) }
+        }
+
+        if (dateRange.start || dateRange.end) {
+            filter.createdAt = {}
+            if (dateRange.start) filter.createdAt.$gte = new Date(dateRange.start)
+            if (dateRange.end) filter.createdAt.$lte = new Date(dateRange.end)
         }
 
         const transactions = await transactionModel.paginate(filter, options)
@@ -194,7 +207,8 @@ const getTransactionByUserIdQuery = async (userId, status = [], transactionType 
 
 const actionOnTransactionQuery = async (details) => {
     try {
-        const { userId: adminId, transactionId, action, reason } = details;
+        console.log(details)
+        const { userId: adminId, transactionId, action, remarks } = details;
 
         // ✅ Validate input early
         if (!["approved", "rejected", "on-hold", "pause"].includes(action)) {
@@ -222,7 +236,7 @@ const actionOnTransactionQuery = async (details) => {
         try {
             let updateOps = {
                 status: action,
-                remarks: reason || "No remarks",
+                remarks: remarks || "No remarks",
                 actionTakenBy: adminId,
                 actionTakenAt: new Date(),
             };

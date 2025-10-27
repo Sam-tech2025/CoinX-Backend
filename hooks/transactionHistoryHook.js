@@ -88,7 +88,6 @@ module.exports = function attachTransactionHooks(TransactionSchema) {
 
             const changes = this.getUpdate();
             const updatedDoc = await this.model.findOne(this.getQuery());
-            console.log("updated doc checkiing", updatedDoc)
 
             await TransactionHistory.create({
                 transactionId: doc._id,

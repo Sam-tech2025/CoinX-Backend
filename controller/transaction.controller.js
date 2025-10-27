@@ -12,8 +12,18 @@ const createTransactionController = async (req, res, next) => {
 
 const getUserTransactionController = async (req, res, next) => {
     try {
-        const { status = "all", page, limit } = req.query
-        const response = await getUserTransactionQuery(status, page || 1, limit || 10)
+        const { searchTerm, status = [], transactionType = [], dateRange, page, limit } = req.query
+        console.log(dateRange)
+        let parsedDateRange = {}
+        if (dateRange) {
+            try {
+                parsedDateRange = JSON.parse(dateRange)
+            } catch (e) {
+                console.log(e)
+            }
+        }
+        console.log({ parsedDateRange })
+        const response = await getUserTransactionQuery(searchTerm, status, transactionType, parsedDateRange, page || 1, limit || 10)
         return res.send(response)
     } catch (error) {
         next(error)
