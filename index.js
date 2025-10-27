@@ -5,7 +5,7 @@ const fileUpload = require("express-fileupload")
 
 const { app_configuration } = require("./config/app.config")
 const connect_mongodb = require("./connections/mongo.connection")
-const { authRoutes } = require("./routes")
+const { authRoutes, transactionRoutes, investmentRoutes } = require("./routes")
 const cookieParser = require("cookie-parser")
 
 function setupMiddleware(app) {
@@ -23,6 +23,8 @@ function setupMiddleware(app) {
 
 function setupRoutes(app) {
     app.use("/auth", authRoutes);
+    app.use("/transaction", transactionRoutes)
+    app.use("/investment", investmentRoutes)
 
     app.get("/", (req, res) => {
         return res.send({

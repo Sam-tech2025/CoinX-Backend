@@ -10,11 +10,20 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true },
     isVerified: { type: Boolean, default: false },
     verificationTime: { type: Date },
+    walletBalance: { type: Number, default: 0 },
     otpCode: { type: String },
     otpExpires: { type: Date },
     phoneNumber: { type: String },
+    landlineNumber: { type: String },
     role: { type: String, enum: ['user', 'admin', 'super-admin'], default: 'user' },
     refreshToken: { type: String, default: null },
+    country: { type: String },
+    city: { type: String },
+    pincode: { type: String },
+    address: { type: String },
+    bitcoinAddress: { type: String },
+    usdtAddress: { type: String },
+    telegramUsername: { type: String },
     createdAt: { type: Date, default: Date.now }
 }, { timestamps: true });
 

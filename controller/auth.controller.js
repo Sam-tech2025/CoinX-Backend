@@ -1,5 +1,5 @@
 const userModel = require("../models/user.model")
-const { authQuery, signUpQuery, verifyOtpQuery } = require("../query/auth.query")
+const { authQuery, signUpQuery, verifyOtpQuery, uploadUserProfileImageQuery, updateUserPersonalInfoQuery, updateUserAddressInfoQuery, updateUserCryptoInfoQuery } = require("../query/auth.query")
 const { verifyRefreshToken, signAccessToken } = require("../services/jwt.service")
 
 
@@ -81,10 +81,80 @@ const logoutController = async (req, res) => {
 };
 
 
+const uploadUserProfileImageController = async (req, res, next) => {
+    try {
+        const response = await uploadUserProfileImageQuery(req.body, req.files.profileImage)
+        return res.send(response)
+    } catch (error) {
+        next(error)
+    }
+}
+
+
+const updateUserPersonalInfoController = async (req, res, next) => {
+    try {
+        const response = await updateUserPersonalInfoQuery(req.body)
+        return res.send(response)
+    } catch (err) {
+        next(err)
+    }
+}
+
+
+const updateUserAddressInfoController = async (req, res, next) => {
+    try {
+        const response = await updateUserAddressInfoQuery(req.body)
+        return res.send(response)
+    } catch (error) {
+        next(error)
+    }
+}
+
+
+
+
+const updateUserCryptoInfoController = async (req, res, next) => {
+    try {
+        const response = await updateUserCryptoInfoQuery(req.body)
+        return res.send(response)
+    } catch (error) {
+        next(error)
+    }
+}
+
+
+const getUserWalletBalanceController = async (req, res, next) => {
+    try {
+        const user = await userModel.findOne({ _id: req.query.userId })
+
+        if (!user) {
+            return res.send({
+                status: false,
+                statusCode: 404,
+                message: "User not found"
+            })
+        }
+
+        return res.send({
+            status: true,
+            statusCode: 200,
+            user
+        })
+
+    } catch (error) {
+        next(error)
+    }
+}
+
 module.exports = {
     authController,
     refreshController,
     logoutController,
     signUpController,
-    verifyOtpController
+    verifyOtpController,
+    uploadUserProfileImageController,
+    updateUserPersonalInfoController,
+    updateUserAddressInfoController,
+    updateUserCryptoInfoController,
+    getUserWalletBalanceController
 }

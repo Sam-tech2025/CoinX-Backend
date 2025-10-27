@@ -2,6 +2,7 @@ const userModel = require("../models/user.model");
 const { signAccessToken, signRefreshToken } = require("../services/jwt.service");
 const bcrypt = require("bcryptjs");
 const { sendMail } = require("../services/mailService");
+const { uploadImage } = require("../services/uploadImage");
 
 const authQuery = async (details) => {
     try {
@@ -189,8 +190,212 @@ const verifyOtpQuery = async (details) => {
     }
 }
 
+
+const uploadUserProfileImageQuery = async (userId, image) => {
+    try {
+        const isExistingUser = await userModel.findOne({ _id: userId.userId });
+
+        if (!isExistingUser) {
+            return {
+                status: false,
+                statusCode: 404,
+                message: "User not found",
+            };
+        }
+
+        let imageUrl = isExistingUser.profilePhotoUrl || "";
+
+        if (image) {
+            // Pass userId to uploadImage to use consistent public_id
+            imageUrl = await uploadImage(image, userId.userId, 'user_profiles');
+        }
+
+        isExistingUser.profilePhotoUrl = imageUrl;
+        const updateUser = await isExistingUser.save();
+
+        return {
+            status: true,
+            statusCode: 200,
+            message: "Profile image updated successfully",
+            updateUser,
+        };
+    } catch (error) {
+        return {
+            status: false,
+            statusCode: 500,
+            message: error.message,
+        };
+    }
+}
+
+
+const updateUserPersonalInfoQuery = async (details) => {
+    try {
+        const isExistingUser = await userModel.findOne({ _id: details.userId })
+
+
+        if (!isExistingUser) {
+            return {
+                status: false,
+                statusCode: 404,
+                message: "User not found",
+            };
+        }
+
+        isExistingUser.firstName = details.firstName;
+        isExistingUser.lastName = details.lastName;
+        isExistingUser.phoneNumber = details.phoneNumber;
+        isExistingUser.landlineNumber = details.landlineNumber
+
+        const updatedUser = await isExistingUser.save()
+
+        return {
+            status: true,
+            statusCode: 200,
+            message: "Details updated successfully",
+            updatedUser,
+        };
+
+
+    } catch (error) {
+        return {
+            status: false,
+            statusCode: 500,
+            message: error.message
+        }
+    }
+}
+
+
+
+
+const updateUserAddressInfoQuery = async (details) => {
+    try {
+        const isExistingUser = await userModel.findOne({ _id: details.userId })
+
+
+        if (!isExistingUser) {
+            return {
+                status: false,
+                statusCode: 404,
+                message: "User not found",
+            };
+        }
+
+        isExistingUser.bitcoinAddress = details.bitcoinAddress;
+        isExistingUser.usdtAddress = details.usdtAddress;
+        isExistingUser.telegramUsername = details.telegramUsername;
+
+        const updatedUser = await isExistingUser.save()
+
+        return {
+            status: true,
+            statusCode: 200,
+            message: "Details updated successfully",
+            updatedUser,
+        };
+
+
+    } catch (error) {
+        return {
+            status: false,
+            statusCode: 500,
+            message: error.message
+        }
+    }
+}
+
+
+
+
+const updateUserCryptoInfoQuery = async (details) => {
+    try {
+        const isExistingUser = await userModel.findOne({ _id: details.userId })
+
+
+        if (!isExistingUser) {
+            return {
+                status: false,
+                statusCode: 404,
+                message: "User not found",
+            };
+        }
+
+        isExistingUser.bitcoinAddress = details.bitcoinAddress;
+        isExistingUser.usdtAddress = details.usdtAddress;
+        isExistingUser.telegramUsername = details.telegramUsername;
+
+        const updatedUser = await isExistingUser.save()
+
+        return {
+            status: true,
+            statusCode: 200,
+            message: "Details updated successfully",
+            updatedUser,
+        };
+
+
+    } catch (error) {
+        return {
+            status: false,
+            statusCode: 500,
+            message: error.message
+        }
+    }
+}
+
+
+
+
+
+const updateUserPasswordQuery = async (details) => {
+    try {
+        const isExistingUser = await userModel.findOne({ _id: details.userId })
+
+
+        if (!isExistingUser) {
+            return {
+                status: false,
+                statusCode: 404,
+                message: "User not found",
+            };
+        }
+
+        const ok = await bcrypt.compare(password, details.password);
+        if (!ok) {
+            return { status: false, statusCode: 401, message: "invalid password" };
+        }
+
+        isExistingUser.password = details.password;
+
+        const updatedUser = await isExistingUser.save()
+
+        return {
+            status: true,
+            statusCode: 200,
+            message: "Details updated successfully",
+            updatedUser,
+        };
+
+
+    } catch (error) {
+        return {
+            status: false,
+            statusCode: 500,
+            message: error.message
+        }
+    }
+}
+
+
+
+
 module.exports = {
     authQuery,
     signUpQuery,
-    verifyOtpQuery
+    verifyOtpQuery,
+    uploadUserProfileImageQuery,
+    updateUserPersonalInfoQuery,
+    updateUserAddressInfoQuery,
+    updateUserCryptoInfoQuery
 };
