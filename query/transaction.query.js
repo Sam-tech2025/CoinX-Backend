@@ -3,28 +3,31 @@ const userModel = require("../models/user.model");
 const mongoose = require("mongoose");
 const { uploadImage } = require("../services/uploadImage");
 const transactionHistoryModel = require("../models/transactionHistory.model");
+const { sendMail } = require("../services/mailService");
+const { getTransactionActionEmailContent } = require("../services/transactionActionTemplate");
+const { getNewTransactionEmailContent } = require("../services/newTransactionTemplate");
+
+
+const adminEmail = process.env.ADMIN_EMAIL
 
 const createTransactionQuery = async (details, image) => {
     try {
-        console.log({ details, image })
-
         const {
             amount,
             currencyType,
             transactionId,
             transactionType,
             withdrawAddress,
+            userId,
         } = details;
-
-        const userId = details.userId;
 
         if (transactionType === "add") {
             if (!amount || !currencyType || !transactionId || !transactionType) {
                 return {
                     status: false,
                     statusCode: 400,
-                    message: "All fields are required."
-                }
+                    message: "All fields are required.",
+                };
             }
         }
 
@@ -33,27 +36,23 @@ const createTransactionQuery = async (details, image) => {
                 return {
                     status: false,
                     statusCode: 400,
-                    message: "All fields are required."
-                }
+                    message: "All fields are required.",
+                };
             }
-        }
 
-        // For withdrawal — user must have enough balance
-        if (transactionType === "withdraw") {
             const user = await userModel.findById(userId);
             if (!user || user.walletBalance < amount) {
                 return {
                     status: false,
                     statusCode: 400,
-                    message: "Insufficient wallet balance for withdrawal."
-                }
+                    message: "Insufficient wallet balance for withdrawal.",
+                };
             }
         }
 
         let imageUrl = "";
-
         if (image) {
-            imageUrl = await uploadImage(image, userId, 'transactions')
+            imageUrl = await uploadImage(image, userId, "transactions");
         }
 
         const newTransaction = await transactionModel.create({
@@ -66,23 +65,41 @@ const createTransactionQuery = async (details, image) => {
             withdrawAddress,
         });
 
+        // ✅ Fetch user info for the email
+        const user = await userModel
+            .findById(userId)
+            .select("userName email walletBalance");
+
+        // ✅ Prepare and send email to admin
+        const { subject, html, text } = getNewTransactionEmailContent({
+            user,
+            transaction: newTransaction,
+        });
+
+        await sendMail({
+            to: "sumangaldey8972@gmail.com",
+            subject,
+            html,
+            text,
+        });
+
         return {
             status: true,
             statusCode: 201,
-            message: transactionType === "add"
-                ? "Deposit request submitted and pending admin approval."
-                : "Withdrawal request submitted and pending admin approval.",
-            transaction: newTransaction
-        }
-
+            message:
+                transactionType === "add"
+                    ? "Deposit request submitted and pending admin approval."
+                    : "Withdrawal request submitted and pending admin approval.",
+            transaction: newTransaction,
+        };
     } catch (error) {
         return {
             status: false,
             statusCode: 500,
-            message: error.message
-        }
+            message: error.message,
+        };
     }
-}
+};
 
 
 const getUserTransactionQuery = async (searchTerm, status = [], transactionType = [], dateRange = {}, page, limit) => {
@@ -208,7 +225,7 @@ const getTransactionByUserIdQuery = async (userId, status = [], transactionType 
 const actionOnTransactionQuery = async (details) => {
     try {
         console.log(details)
-        const { userId: adminId, transactionId, action, remarks } = details;
+        const { userId: adminId, transactionId, action, remarks, userEmail } = details;
 
         // ✅ Validate input early
         if (!["approved", "rejected", "on-hold", "pause"].includes(action)) {
@@ -218,7 +235,7 @@ const actionOnTransactionQuery = async (details) => {
         // ✅ Fetch only required fields
         const transaction = await transactionModel
             .findById(transactionId)
-            .select("status transactionType amount userId");
+            .select("status transactionType amount userId currencyType");
 
         if (!transaction) {
             return { status: false, statusCode: 404, message: "Transaction not found" };
@@ -277,6 +294,26 @@ const actionOnTransactionQuery = async (details) => {
                 { $set: updateOps },
                 { new: true, session }
             );
+
+            console.log({
+                action,
+                transaction,
+                remarks,
+            })
+            // ✅ Generate email
+            const { subject, html, text } = getTransactionActionEmailContent({
+                action,
+                transaction,
+                remarks,
+            });
+
+
+            await sendMail({
+                to: userEmail,
+                subject,
+                html,
+                text
+            })
 
             // ✅ Commit atomic operation
             await session.commitTransaction();
