@@ -9,15 +9,31 @@ cloudinary.config({
 
 const generateSignature = async (req, res) => {
     try {
+        const { userId, type } = req.body;
         const timestamp = Math.round(new Date().getTime() / 1000);
-        const folder = `kyc/${req.body.userId || "unknown"}`;
+
+        const folder = `kyc/${userId}`;
+        const public_id = `${folder}/${type}`;
+
+        const paramsToSign = {
+            timestamp,
+            folder,
+            overwrite: true,
+            public_id,
+        };
 
         const signature = cloudinary.utils.api_sign_request(
-            { timestamp, folder },
+            paramsToSign,
             process.env.CLOUDINARY_API_SECRET
         );
 
-        res.json({ timestamp, folder, signature, cloudName: process.env.CLOUDINARY_CLOUD_NAME });
+        res.json({
+            timestamp,
+            folder,
+            signature,
+            cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+            public_id,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: "Failed to generate signature" });
