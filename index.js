@@ -5,7 +5,7 @@ const fileUpload = require("express-fileupload")
 
 const { app_configuration } = require("./config/app.config")
 const connect_mongodb = require("./connections/mongo.connection")
-const { authRoutes, transactionRoutes, investmentRoutes } = require("./routes")
+const { authRoutes, transactionRoutes, investmentRoutes, kycRoutes, cloudionaryRoutes } = require("./routes")
 const cookieParser = require("cookie-parser")
 
 function setupMiddleware(app) {
@@ -15,8 +15,8 @@ function setupMiddleware(app) {
     app.use(express.urlencoded({ extended: true }))
     app.use(cookieParser())
     app.use(fileUpload({
-        useTempFiles: true,
-        tempFileDir: "/tmp/",
+        useTempFiles: false,
+        limits: { fileSize: 5 * 1024 * 1024 } // 5MB
     }));
 
 }
@@ -25,6 +25,10 @@ function setupRoutes(app) {
     app.use("/auth", authRoutes);
     app.use("/transaction", transactionRoutes)
     app.use("/investment", investmentRoutes)
+    app.use("/kyc", kycRoutes)
+
+
+    app.use("/cloudionary", cloudionaryRoutes)
 
     app.get("/", (req, res) => {
         return res.send({

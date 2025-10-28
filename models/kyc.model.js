@@ -1,13 +1,20 @@
 
 const mongoose = require("mongoose")
+const aggregatePaginate = require("mongoose-aggregate-paginate-v2");
+const mongoosePaginate = require("mongoose-paginate-v2");
+
 
 const kycSchema = new mongoose.Schema(
     {
-        userId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "User",
-            required: true,
-            index: true,
+        user: {
+            userId: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "User",
+                required: true,
+                index: true,
+            },
+            userName: String,
+            email: String
         },
 
         // Country of the user
@@ -43,14 +50,14 @@ const kycSchema = new mongoose.Schema(
         // Current KYC status
         status: {
             type: String,
-            enum: ["pending", "approved", "rejected", "paused", "on_hold"],
+            enum: ["pending", "approved", "rejected", "paused", "on-hold"],
             default: "pending",
         },
 
         // Admin who reviewed last
         reviewedBy: {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Admin",
+            ref: "User",
             default: null,
         },
 
@@ -66,11 +73,11 @@ const kycSchema = new mongoose.Schema(
             {
                 action: {
                     type: String,
-                    enum: ["submitted", "approved", "rejected", "paused", "on_hold"],
+                    enum: ["submitted", "approved", "rejected", "paused", "on-hold"],
                 },
                 actionBy: {
                     type: mongoose.Schema.Types.ObjectId,
-                    ref: "Admin",
+                    ref: "User",
                 },
                 remark: String,
                 createdAt: { type: Date, default: Date.now },
@@ -86,5 +93,8 @@ const kycSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
+
+kycSchema.plugin(aggregatePaginate)
+kycSchema.plugin(mongoosePaginate)
 
 module.exports = mongoose.model("KycRequest", kycSchema)
